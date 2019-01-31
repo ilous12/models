@@ -1,5 +1,7 @@
 # DeepLab: Deep Labelling for Semantic Image Segmentation
 
+train_trtc.sh
+
 DeepLab is a state-of-art deep learning model for semantic image segmentation,
 where the goal is to assign semantic labels (e.g., person, dog, cat and so on)
 to every pixel in the input image. Current implementation includes the following
