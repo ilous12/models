@@ -53,6 +53,9 @@ flags.DEFINE_multi_float('inference_scales', [1.0],
 flags.DEFINE_bool('add_flipped_images', False,
                   'Add flipped images during inference or not.')
 
+flags.DEFINE_bool('tflite', True,
+                  'Add flipped images during inference or not.')
+
 # Input name of the exported model.
 _INPUT_NAME = 'ImageTensor'
 
@@ -75,6 +78,7 @@ def _create_input_tensors():
   """
   # input_preprocess takes 4-D image tensor as input.
   input_image = tf.placeholder(tf.uint8, [1, None, None, 3], name=_INPUT_NAME)
+  #input_image = tf.placeholder(tf.float32, [1, None, None, 3], name=_INPUT_NAME)
   original_image_size = tf.shape(input_image)[1:3]
 
   # Squeeze the dimension in axis=0 since `preprocess_image_and_label` assumes
@@ -126,23 +130,37 @@ def main(unused_argv):
           eval_scales=FLAGS.inference_scales,
           add_flipped_images=FLAGS.add_flipped_images)
 
-    predictions = tf.cast(predictions[common.OUTPUT_TYPE], tf.float32)
-    # Crop the valid regions from the predictions.
-    semantic_predictions = tf.slice(
-        predictions,
+    #predictions = tf.cast(predictions[common.OUTPUT_TYPE], tf.float32)
+    if not FLAGS.tflite:
+      semantic_predictions = tf.slice(
+        predictions[common.OUTPUT_TYPE],
         [0, 0, 0],
         [1, resized_image_size[0], resized_image_size[1]])
+
+    # Crop the valid regions from the predictions.
+    # enable tflite for exporting tflite model
+    if not FLAGS.tflite:
+      semantic_predictions = tf.slice(
+        predictions[common.OUTPUT_TYPE],
+        [0, 0, 0],
+        [1, resized_image_size[0], resized_image_size[1]])
+      
     # Resize back the prediction to the original image size.
     def _resize_label(label, label_size):
       # Expand dimension of label to [1, height, width, 1] for resize operation.
       label = tf.expand_dims(label, 3)
       resized_label = tf.image.resize_images(
-          label,
-          label_size,
-          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
-          align_corners=True)
-      return tf.cast(tf.squeeze(resized_label, 3), tf.int32)
-    semantic_predictions = _resize_label(semantic_predictions, image_size)
+        label,
+        label_size,
+        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
+        align_corners=True)
+      return tf.squeeze(resized_label, 3)
+    if FLAGS.tflite:
+      semantic_predictions = tf.cast(predictions[common.OUTPUT_TYPE], tf.uint8)
+      semantic_predictions = tf.squeeze(semantic_predictions)
+    else:
+      semantic_predictions = _resize_label(semantic_predictions, image_size)
+      
     semantic_predictions = tf.identity(semantic_predictions, name=_OUTPUT_NAME)
 
     saver = tf.train.Saver(tf.model_variables())

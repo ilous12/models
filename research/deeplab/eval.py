@@ -139,8 +139,16 @@ def main(unused_argv):
 
     # Define the evaluation metric.
     metric_map = {}
+
+    # GWANGHEE
+    indices = tf.squeeze(tf.where(tf.less_equal(
+      labels, dataset.num_classes - 1)), 1)
+    labels = tf.cast(tf.gather(labels, indices), tf.int32)
+    predictions = tf.gather(predictions, indices)
+    # end of insert
+    
     metric_map[predictions_tag] = tf.metrics.mean_iou(
-        predictions, labels, dataset.num_classes, weights=weights)
+      predictions, labels, dataset.num_classes, weights=weights)
 
     metrics_to_values, metrics_to_updates = (
         tf.contrib.metrics.aggregate_metric_map(metric_map))
