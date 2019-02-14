@@ -136,14 +136,6 @@ def main(unused_argv):
         predictions[common.OUTPUT_TYPE],
         [0, 0, 0],
         [1, resized_image_size[0], resized_image_size[1]])
-
-    # Crop the valid regions from the predictions.
-    # enable tflite for exporting tflite model
-    if not FLAGS.tflite:
-      semantic_predictions = tf.slice(
-        predictions[common.OUTPUT_TYPE],
-        [0, 0, 0],
-        [1, resized_image_size[0], resized_image_size[1]])
       
     # Resize back the prediction to the original image size.
     def _resize_label(label, label_size):
