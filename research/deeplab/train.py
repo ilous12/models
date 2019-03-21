@@ -154,7 +154,7 @@ flags.DEFINE_float('scale_factor_step_size', 0.25,
 flags.DEFINE_multi_integer('atrous_rates', None,
                            'Atrous rates for atrous spatial pyramid pooling.')
 
-flags.DEFINE_integer('output_stride', 16,
+flags.DEFINE_integer('output_stride', 32,
                      'The ratio of input to output spatial resolution.')
 
 # Dataset settings.

@@ -59,7 +59,7 @@ flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 flags.DEFINE_multi_integer('atrous_rates', None,
                            'Atrous rates for atrous spatial pyramid pooling.')
 
-flags.DEFINE_integer('output_stride', 16,
+flags.DEFINE_integer('output_stride', 32,
                      'The ratio of input to output spatial resolution.')
 
 # Change to [0.5, 0.75, 1.0, 1.25, 1.5, 1.75] for multi-scale test.
@@ -155,6 +155,7 @@ def _process_batch(sess, original_images, semantic_predictions, image_names,
 
   num_image = semantic_predictions.shape[0]
   for i in range(num_image):
+    print("i=%d" %(i))
     image_height = np.squeeze(image_heights[i])
     image_width = np.squeeze(image_widths[i])
     original_image = np.squeeze(original_images[i])
@@ -272,6 +273,7 @@ def main(unused_argv):
         dataset.num_samples / float(FLAGS.vis_batch_size)))
     last_checkpoint = None
 
+    print("### GWANGHEE VIS ### " + str(FLAGS.checkpoint_dir))    
     # Loop to visualize the results when new checkpoint is created.
     num_iters = 0
     while (FLAGS.max_number_of_iterations <= 0 or
@@ -292,6 +294,7 @@ def main(unused_argv):
 
         image_id_offset = 0
         for batch in range(num_batches):
+          print("batch=%d" %(batch))
           tf.logging.info('Visualizing batch %d / %d', batch + 1, num_batches)
           _process_batch(sess=sess,
                          original_images=samples[common.ORIGINAL_IMAGE],

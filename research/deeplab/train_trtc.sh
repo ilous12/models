@@ -23,6 +23,8 @@
 #
 #
 
+DIMENSION=257
+
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
@@ -56,7 +58,8 @@ EVAL_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${PASCAL_FOLDER}/${EXP_FOLDER}/eval"
 VIS_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${PASCAL_FOLDER}/${EXP_FOLDER}/vis"
 EXPORT_DIR="${WORK_DIR}/${DATASET_DIR}/${PASCAL_FOLDER}/${EXP_FOLDER}/export"
 
-rm -rf "{EXP_FOLDER}"
+rm -rf "${WORK_DIR}/${DATASET_DIR}/${PASCAL_FOLDER}/exp"
+rm -rf "${WORK_DIR}/${DATASET_DIR}/${PASCAL_FOLDER}/exp"
 mkdir -p "${INIT_FOLDER}"
 mkdir -p "${TRAIN_LOGDIR}"
 mkdir -p "${EVAL_LOGDIR}"
@@ -80,9 +83,9 @@ python "${WORK_DIR}"/train.py \
   --logtostderr \
   --train_split="trainval" \
   --model_variant="mobilenet_v2" \
-  --output_stride=16 \
-  --train_crop_size=129 \
-  --train_crop_size=129 \
+  --output_stride=32 \
+  --train_crop_size="${DIMENSION}" \
+  --train_crop_size="${DIMENSION}" \
   --train_batch_size=4 \
   --training_number_of_steps="${NUM_ITERATIONS}" \
   --fine_tune_batch_norm=true \
@@ -97,8 +100,9 @@ python "${WORK_DIR}"/eval.py \
   --logtostderr \
   --eval_split="val" \
   --model_variant="mobilenet_v2" \
-  --eval_crop_size=129 \
-  --eval_crop_size=129 \
+  --output_stride=32 \
+  --eval_crop_size="${DIMENSION}" \
+  --eval_crop_size="${DIMENSION}" \
   --checkpoint_dir="${TRAIN_LOGDIR}" \
   --eval_logdir="${EVAL_LOGDIR}" \
   --dataset_dir="${PASCAL_DATASET}" \
@@ -109,8 +113,9 @@ python "${WORK_DIR}"/vis.py \
   --logtostderr \
   --vis_split="val" \
   --model_variant="mobilenet_v2" \
-  --vis_crop_size=129 \
-  --vis_crop_size=129 \
+  --output_stride=32 \
+  --vis_crop_size="${DIMENSION}" \
+  --vis_crop_size="${DIMENSION}" \
   --checkpoint_dir="${TRAIN_LOGDIR}" \
   --vis_logdir="${VIS_LOGDIR}" \
   --dataset_dir="${PASCAL_DATASET}" \
@@ -125,10 +130,43 @@ python "${WORK_DIR}"/export_model.py \
   --checkpoint_path="${CKPT_PATH}" \
   --export_path="${EXPORT_PATH}" \
   --model_variant="mobilenet_v2" \
+  --output_stride=32 \
+  --checkpoint_dir="${TRAIN_LOGDIR}" \
   --num_classes=21 \
-  --crop_size=129 \
-  --crop_size=129 \
+  --crop_size="${DIMENSION}" \
+  --crop_size="${DIMENSION}" \
   --inference_scales=1.0
 
 # Run inference with the exported checkpoint.
 # Please refer to the provided deeplab_demo.ipynb for an example.
+
+sleep 1
+
+PB_FILE="${WORK_DIR}"/datasets/pascal_voc_seg/exp/train_on_trainval_set_mobilenetv2/export/frozen_inference_graph.pb
+TF_FILE=deeplabv3_257_mv_gpu.tflite
+DIMENSION=257
+
+ls -alh $PB_FILE
+
+echo "# clear"
+
+rm -rf *.tflite
+
+echo "# convert"
+
+tflite_convert \
+    --output_file=$TF_FILE \
+    --graph_def_file=$PB_FILE \
+    --output_format=TFLITE \
+    --input_arrays=sub_7 \
+    --output_arrays=ResizeBilinear_2 \
+    --input_shapes=1,${DIMENSION},${DIMENSION},3 \
+    --inference_input_type=FLOAT \
+    --inference_type=FLOAT \
+    --mean_values=128 \
+    --std_dev_values=128 \
+    --default_ranges_min=-1 \
+    --default_ranges_max=1 \
+    
+echo "# done"
+
